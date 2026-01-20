@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Commands;
-using CounterStrikeSharp.API.Modules.Admin;
+using System;
 
 namespace OwnagePlugin
 {
@@ -32,31 +32,32 @@ namespace OwnagePlugin
         private void CheckForHeadLandings()
         {
             var players = Utilities.GetPlayers().Where(p => 
+                p != null &&
                 p.IsValid && 
                 !p.IsBot && 
                 p.Pawn.IsValid && 
                 p.Pawn.Value != null && 
-                p.Pawn.Value.AbsOrigin != null).ToList();
+                p.Pawn.Value?.AbsOrigin != null).ToList();
 
             foreach (var jumper in players)
             {
-                var jumperPos = jumper.Pawn.Value.AbsOrigin;
+                var jumperPos = jumper.Pawn.Value?.AbsOrigin;
                 if (jumperPos == null) continue;
 
-                foreach (var victim in players.Where(v => v.SteamID != jumper.SteamID))
+                foreach (var victim in players.Where(v => v != null && v.SteamID != jumper.SteamID))
                 {
-                    var victimPos = victim.Pawn.Value.AbsOrigin;
+                    var victimPos = victim.Pawn.Value?.AbsOrigin;
                     if (victimPos == null) continue;
 
                     // Горизонтальное расстояние
                     float dist2d = MathF.Sqrt(
-                        MathF.Pow(jumperPos!.X - victimPos!.X, 2) +
-                        MathF.Pow(jumperPos!.Y - victimPos!.Y, 2)
+                        MathF.Pow(jumperPos.X - victimPos.X, 2) +
+                        MathF.Pow(jumperPos.Y - victimPos.Y, 2)
                     );
 
                     // Высота головы жертвы
-                    float victimHeadZ = victimPos!.Z + 64.0f;
-                    float heightDiff = jumperPos!.Z - victimHeadZ;
+                    float victimHeadZ = victimPos.Z + 64.0f;
+                    float heightDiff = jumperPos.Z - victimHeadZ;
 
                     // Условия активации
                     if (dist2d < 32.0f && heightDiff > 5.0f && heightDiff < 120.0f)
@@ -95,6 +96,27 @@ namespace OwnagePlugin
             Server.PrintToChatAll($" \x04[OWNAGE]\x01 {jumper.PlayerName} \x05заовнил\x01 {victim.PlayerName}!");
         }
 
+        // Вспомогательный метод для поиска игрока по имени
+        private CCSPlayerController? FindPlayerByName(string playerName)
+        {
+            playerName = playerName.ToLower();
+            
+            foreach (var player in Utilities.GetPlayers())
+            {
+                if (player == null || !player.IsValid || player.IsBot) continue;
+                
+                // Точное совпадение
+                if (player.PlayerName.ToLower() == playerName)
+                    return player;
+                
+                // Частичное совпадение (начало имени)
+                if (player.PlayerName.ToLower().StartsWith(playerName))
+                    return player;
+            }
+            
+            return null;
+        }
+
         // Команда для тестирования системы ownage
         [CommandHelper(minArgs: 0, usage: "[target]", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
         public void CommandOwnageTest(CCSPlayerController? caller, CommandInfo command)
@@ -102,7 +124,7 @@ namespace OwnagePlugin
             // Если команда вызвана с серверной консоли
             if (caller == null)
             {
-                var players = Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot).ToList();
+                var players = Utilities.GetPlayers().Where(p => p != null && p.IsValid && !p.IsBot).ToList();
                 if (players.Count < 2)
                 {
                     command.ReplyToCommand("Not enough players to test ownage!");
@@ -120,7 +142,7 @@ namespace OwnagePlugin
             if (command.ArgCount >= 2)
             {
                 var targetName = command.GetArg(1);
-                var target = Utilities.GetPlayerFromUserInput(targetName);
+                var target = FindPlayerByName(targetName);
                 
                 if (target == null || !target.IsValid || target.IsBot)
                 {
@@ -140,7 +162,7 @@ namespace OwnagePlugin
             else
             {
                 var otherPlayers = Utilities.GetPlayers().Where(p => 
-                    p.IsValid && !p.IsBot && p.SteamID != caller.SteamID).ToList();
+                    p != null && p.IsValid && !p.IsBot && p.SteamID != caller.SteamID).ToList();
                 
                 if (otherPlayers.Count == 0)
                 {
@@ -167,7 +189,7 @@ namespace OwnagePlugin
                 {
                     foreach (var player in Utilities.GetPlayers())
                     {
-                        if (player.IsValid && !player.IsBot && player.Pawn.IsValid && player.Pawn.Value != null)
+                        if (player != null && player.IsValid && !player.IsBot && player.Pawn.IsValid && player.Pawn.Value != null)
                         {
                             player.ExecuteClientCommand($"play {soundEvent}");
                         }
@@ -190,7 +212,7 @@ namespace OwnagePlugin
                 {
                     foreach (var player in Utilities.GetPlayers())
                     {
-                        if (player.IsValid && !player.IsBot && player.Pawn.IsValid && player.Pawn.Value != null)
+                        if (player != null && player.IsValid && !player.IsBot && player.Pawn.IsValid && player.Pawn.Value != null)
                         {
                             player.ExecuteClientCommand($"play {soundEvent}");
                         }
@@ -199,7 +221,7 @@ namespace OwnagePlugin
                 }
                 else
                 {
-                    var target = Utilities.GetPlayerFromUserInput(targetArg);
+                    var target = FindPlayerByName(targetArg);
                     if (target == null || !target.IsValid || target.IsBot)
                     {
                         command.ReplyToCommand($"Player {targetArg} not found!");

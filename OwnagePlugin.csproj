@@ -9,10 +9,10 @@
     <AssemblyName>OwnagePlugin</AssemblyName>
     <RootNamespace>OwnagePlugin</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Последняя версия из результатов поиска -->
     <PackageReference Include="CounterStrikeSharp.API" Version="1.0.356" />
   </ItemGroup>
 
