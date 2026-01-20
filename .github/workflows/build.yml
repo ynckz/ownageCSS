@@ -5,7 +5,7 @@ on:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
-  workflow_dispatch:  # Позволяет запускать вручную
+  workflow_dispatch:  # Запуск вручную
 
 jobs:
   build:
@@ -31,12 +31,22 @@ jobs:
           mkdir -p plugin/addons/counterstrikesharp/plugins/OwnagePlugin
           cp bin/Release/net8.0/OwnagePlugin.dll plugin/addons/counterstrikesharp/plugins/OwnagePlugin/
 
+      - name: Create plugin.json (рекомендуется)
+        run: |
+          echo '{
+            "Name": "OwnagePlugin",
+            "Description": "Plays OWNAGE sound when landing on enemy head",
+            "Author": "YourName",
+            "Version": "1.0.0",
+            "Url": "https://github.com/yourusername/ownageCSS"
+          }' > plugin/addons/counterstrikesharp/plugins/OwnagePlugin/plugin.json
+
       - name: Create ZIP artifact
         run: |
-          Compress-Archive -Path plugin/* -DestinationPath OwnagePlugin.zip
+          Compress-Archive -Path plugin/* -DestinationPath OwnagePlugin.zip -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OwnagePlugin
+          name: OwnagePlugin-${{ github.sha }}
           path: OwnagePlugin.zip

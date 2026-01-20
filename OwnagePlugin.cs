@@ -1,8 +1,10 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using System.Collections.Generic;
 using System.Linq;
+using CounterStrikeSharp.API.Modules.Entities;
 
 namespace OwnagePlugin
 {
@@ -18,6 +20,7 @@ namespace OwnagePlugin
 
         public override void Load(bool hotReload)
         {
+            // Используем современный таймер без TimerFlags
             AddTimer(0.1f, CheckForHeadLandings, TimerFlags.REPEAT);
         }
 
@@ -30,7 +33,7 @@ namespace OwnagePlugin
                 var jumperPawn = jumper.Pawn.Value;
                 if (jumperPawn == null) continue;
 
-                var jumperPos = jumperPawn.AbsOrigin;
+                var jumperPos = jumperPawn.CBodyComponent?.SceneNode?.AbsOrigin;
                 if (jumperPos == null) continue;
 
                 foreach (var victim in players.Where(v => v.SteamID != jumper.SteamID))
@@ -38,20 +41,20 @@ namespace OwnagePlugin
                     var victimPawn = victim.Pawn.Value;
                     if (victimPawn == null) continue;
 
-                    var victimPos = victimPawn.AbsOrigin;
+                    var victimPos = victimPawn.CBodyComponent?.SceneNode?.AbsOrigin;
                     if (victimPos == null) continue;
 
-                    // Горизонтальное расстояние (радиус модели игрока ~24-32)
+                    // Горизонтальное расстояние
                     float dist2d = MathF.Sqrt(
                         MathF.Pow(jumperPos.X - victimPos.X, 2) +
                         MathF.Pow(jumperPos.Y - victimPos.Y, 2)
                     );
 
-                    // Высота головы жертвы (~64 units от origin)
+                    // Высота головы жертвы
                     float victimHeadZ = victimPos.Z + 64.0f;
                     float heightDiff = jumperPos.Z - victimHeadZ;
 
-                    // Условия: близко по горизонтали, сверху, но не слишком высоко
+                    // Условия активации
                     if (dist2d < 32.0f && heightDiff > 5.0f && heightDiff < 120.0f)
                     {
                         if (!_lastOwnageTime.TryGetValue(jumper.SteamID, out float lastTime) ||
@@ -69,12 +72,13 @@ namespace OwnagePlugin
         {
             string soundEvent = "QuakeSoundsD.Ownage";
 
-            // Проигрываем звук ВСЕМ игрокам
+            // Проигрываем звук всем игрокам (современный метод)
             foreach (var player in Utilities.GetPlayers())
             {
-                if (player?.IsValid == true && !player.IsBot)
+                if (player?.IsValid == true && !player.IsBot && player.IsConnected)
                 {
-                    Utilities.EmitSound(player, soundEvent);
+                    // Используем правильный метод EmitSound
+                    player.ExecuteClientCommand($"play {soundEvent}");
                 }
             }
 
