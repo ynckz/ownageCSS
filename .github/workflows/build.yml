@@ -3,8 +3,6 @@ name: Build OwnagePlugin
 on:
   push:
     branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
@@ -26,28 +24,27 @@ jobs:
       - name: Build plugin (Release)
         run: dotnet build --configuration Release --no-restore
 
-      - name: Create plugin directory structure
+      - name: Create plugin structure
         shell: pwsh
         run: |
-          # Создаем структуру папок
+          # Основная структура
           $pluginDir = "plugin/addons/counterstrikesharp/plugins/OwnagePlugin"
           New-Item -Path $pluginDir -ItemType Directory -Force
           
           # Копируем DLL
           Copy-Item "bin/Release/net8.0/OwnagePlugin.dll" -Destination "$pluginDir/"
           
-          # Создаем папку для звуков
-          $soundDir = "$pluginDir/sound/ownage"
+          # Создаем структуру для звуков
+          $soundDir = "plugin/sound/ownage"  # ВАЖНО: именно sound, не sounds!
           New-Item -Path $soundDir -ItemType Directory -Force
           
-          # Копируем звуковой файл
-          if (Test-Path "sound/ownage/ownage.mp3") {
-            Copy-Item "sound/ownage/ownage.mp3" -Destination "$soundDir/"
-            Write-Host "✅ Sound file copied successfully"
+          # Копируем звук
+          if (Test-Path "sound/ownage/ownage.wav") {
+            Copy-Item "sound/ownage/ownage.wav" -Destination "$soundDir/"
+            Write-Host "✅ Звуковой файл скопирован"
           } else {
-            Write-Host "❌ Sound file not found! Creating placeholder..."
-            # Создаем пустой файл как placeholder
-            New-Item -Path "$soundDir/ownage.mp3" -ItemType File
+            Write-Host "❌ Звуковой файл не найден! Скачай ownage.wav и положи в sound/ownage/"
+            exit 1
           }
 
       - name: Create plugin.json
@@ -57,12 +54,12 @@ jobs:
             Name = "OwnagePlugin"
             Description = "Plays OWNAGE sound when landing on enemy head"
             Author = "YourName"
-            Version = "2.0"
+            Version = "2.1"
             Url = "https://github.com/yourusername/ownageCSS"
           } | ConvertTo-Json
           $pluginJson | Out-File -FilePath "plugin/addons/counterstrikesharp/plugins/OwnagePlugin/plugin.json" -Encoding UTF8
 
-      - name: Create ZIP artifact
+      - name: Create ZIP
         shell: pwsh
         run: |
           Compress-Archive -Path "plugin/*" -DestinationPath "OwnagePlugin.zip" -Force
@@ -70,5 +67,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OwnagePlugin-${{ github.sha }}
+          name: OwnagePlugin
           path: OwnagePlugin.zip
