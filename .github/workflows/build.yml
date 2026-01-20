@@ -37,7 +37,7 @@ jobs:
         run: |
           $pluginJson = @{
             Name = "OwnagePlugin"
-            Description = "Plays QuakeSoundsD.Ownage when landing on enemy head"
+            Description = "Plays OWNAGE sound when landing on enemy head"
             Author = "YourName"
             Version = "1.0.0"
             Url = "https://github.com/yourusername/ownageCSS"

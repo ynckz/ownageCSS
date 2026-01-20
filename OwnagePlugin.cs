@@ -5,7 +5,6 @@ using CounterStrikeSharp.API.Modules.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using CounterStrikeSharp.API.Modules.Entities;
-using CounterStrikeSharp.API.Modules.Memory;
 
 namespace OwnagePlugin
 {
@@ -21,7 +20,6 @@ namespace OwnagePlugin
 
         public override void Load(bool hotReload)
         {
-            // Современный таймер с правильными флагами
             AddTimer(0.1f, CheckForHeadLandings, TimerFlags.REPEAT);
         }
 
@@ -30,9 +28,8 @@ namespace OwnagePlugin
             var players = Utilities.GetPlayers().Where(p => 
                 p.IsValid && 
                 !p.IsBot && 
-                p.Connected == ConnectionState.Connected && 
+                p.Pawn.IsValid && 
                 p.Pawn.Value != null && 
-                p.Pawn.Value.IsValid && 
                 p.Pawn.Value.AbsOrigin != null).ToList();
 
             foreach (var jumper in players)
@@ -73,13 +70,14 @@ namespace OwnagePlugin
         {
             string soundEvent = "QuakeSoundsD.Ownage";
 
-            // Проигрываем звук всем подключенным игрокам
+            // Проигрываем звук всем валидным игрокам
             foreach (var player in Utilities.GetPlayers())
             {
                 if (player == null || 
                     !player.IsValid || 
                     player.IsBot || 
-                    player.Connected != ConnectionState.Connected) 
+                    !player.Pawn.IsValid || 
+                    player.Pawn.Value == null) 
                 {
                     continue;
                 }
