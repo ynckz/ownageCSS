@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using System.Collections.Generic;
 using System.Linq;
+using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Entities;
 
 namespace OwnagePlugin
@@ -20,39 +21,41 @@ namespace OwnagePlugin
 
         public override void Load(bool hotReload)
         {
-            // Используем современный таймер без TimerFlags
+            // Исправленный таймер без TimerFlags.REPEAT
             AddTimer(0.1f, CheckForHeadLandings, TimerFlags.REPEAT);
         }
 
         private void CheckForHeadLandings()
         {
-            var players = Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot && p.Pawn.Value != null).ToList();
+            var players = Utilities.GetPlayers().Where(p => 
+                p.IsValid && 
+                !p.IsBot && 
+                p.Pawn.Value != null && 
+                p.Pawn.Value.IsValid).ToList();
 
             foreach (var jumper in players)
             {
                 var jumperPawn = jumper.Pawn.Value;
-                if (jumperPawn == null) continue;
-
-                var jumperPos = jumperPawn.CBodyComponent?.SceneNode?.AbsOrigin;
+                var jumperPos = jumperPawn?.CBodyComponent?.SceneNode?.AbsOrigin;
+                
                 if (jumperPos == null) continue;
 
                 foreach (var victim in players.Where(v => v.SteamID != jumper.SteamID))
                 {
                     var victimPawn = victim.Pawn.Value;
-                    if (victimPawn == null) continue;
-
-                    var victimPos = victimPawn.CBodyComponent?.SceneNode?.AbsOrigin;
+                    var victimPos = victimPawn?.CBodyComponent?.SceneNode?.AbsOrigin;
+                    
                     if (victimPos == null) continue;
 
                     // Горизонтальное расстояние
                     float dist2d = MathF.Sqrt(
-                        MathF.Pow(jumperPos.X - victimPos.X, 2) +
-                        MathF.Pow(jumperPos.Y - victimPos.Y, 2)
+                        MathF.Pow(jumperPos!.X - victimPos!.X, 2) +
+                        MathF.Pow(jumperPos!.Y - victimPos!.Y, 2)
                     );
 
                     // Высота головы жертвы
-                    float victimHeadZ = victimPos.Z + 64.0f;
-                    float heightDiff = jumperPos.Z - victimHeadZ;
+                    float victimHeadZ = victimPos!.Z + 64.0f;
+                    float heightDiff = jumperPos!.Z - victimHeadZ;
 
                     // Условия активации
                     if (dist2d < 32.0f && heightDiff > 5.0f && heightDiff < 120.0f)
@@ -72,12 +75,14 @@ namespace OwnagePlugin
         {
             string soundEvent = "QuakeSoundsD.Ownage";
 
-            // Проигрываем звук всем игрокам (современный метод)
+            // Проигрываем звук всем игрокам (без IsConnected)
             foreach (var player in Utilities.GetPlayers())
             {
-                if (player?.IsValid == true && !player.IsBot && player.IsConnected)
+                if (player == null || !player.IsValid || player.IsBot) continue;
+                
+                // Проверяем, что игрок авторизован и в игре
+                if (player.Authorized && player.Pawn.Value != null && player.Pawn.Value.IsValid)
                 {
-                    // Используем правильный метод EmitSound
                     player.ExecuteClientCommand($"play {soundEvent}");
                 }
             }
