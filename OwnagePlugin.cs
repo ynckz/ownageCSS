@@ -184,7 +184,6 @@ namespace OwnagePlugin
             command.ReplyToCommand($"🔍 OWNAGE DEBUG:");
             command.ReplyToCommand($"- Путь к звуку: '{OWNAGE_SOUND_PATH}'");
             command.ReplyToCommand($"- Файл должен лежать в: /csgo/sound/{OWNAGE_SOUND_PATH}");
-            command.ReplyToCommand($"- Версия API: {ApiVersion}");
             
             if (caller != null)
             {
