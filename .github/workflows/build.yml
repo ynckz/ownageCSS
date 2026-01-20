@@ -1,0 +1,42 @@
+name: Build OwnagePlugin
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:  # Позволяет запускать вручную
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build plugin (Release)
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Create plugin directory structure
+        run: |
+          mkdir -p plugin/addons/counterstrikesharp/plugins/OwnagePlugin
+          cp bin/Release/net8.0/OwnagePlugin.dll plugin/addons/counterstrikesharp/plugins/OwnagePlugin/
+
+      - name: Create ZIP artifact
+        run: |
+          Compress-Archive -Path plugin/* -DestinationPath OwnagePlugin.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OwnagePlugin
+          path: OwnagePlugin.zip
