@@ -4,8 +4,8 @@ using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using System.Collections.Generic;
 using System.Linq;
-using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Entities;
+using CounterStrikeSharp.API.Modules.Memory;
 
 namespace OwnagePlugin
 {
@@ -21,7 +21,7 @@ namespace OwnagePlugin
 
         public override void Load(bool hotReload)
         {
-            // Исправленный таймер без TimerFlags.REPEAT
+            // Современный таймер с правильными флагами
             AddTimer(0.1f, CheckForHeadLandings, TimerFlags.REPEAT);
         }
 
@@ -30,21 +30,19 @@ namespace OwnagePlugin
             var players = Utilities.GetPlayers().Where(p => 
                 p.IsValid && 
                 !p.IsBot && 
+                p.Connected == ConnectionState.Connected && 
                 p.Pawn.Value != null && 
-                p.Pawn.Value.IsValid).ToList();
+                p.Pawn.Value.IsValid && 
+                p.Pawn.Value.AbsOrigin != null).ToList();
 
             foreach (var jumper in players)
             {
-                var jumperPawn = jumper.Pawn.Value;
-                var jumperPos = jumperPawn?.CBodyComponent?.SceneNode?.AbsOrigin;
-                
+                var jumperPos = jumper.Pawn.Value.AbsOrigin;
                 if (jumperPos == null) continue;
 
                 foreach (var victim in players.Where(v => v.SteamID != jumper.SteamID))
                 {
-                    var victimPawn = victim.Pawn.Value;
-                    var victimPos = victimPawn?.CBodyComponent?.SceneNode?.AbsOrigin;
-                    
+                    var victimPos = victim.Pawn.Value.AbsOrigin;
                     if (victimPos == null) continue;
 
                     // Горизонтальное расстояние
@@ -75,16 +73,18 @@ namespace OwnagePlugin
         {
             string soundEvent = "QuakeSoundsD.Ownage";
 
-            // Проигрываем звук всем игрокам (без IsConnected)
+            // Проигрываем звук всем подключенным игрокам
             foreach (var player in Utilities.GetPlayers())
             {
-                if (player == null || !player.IsValid || player.IsBot) continue;
-                
-                // Проверяем, что игрок авторизован и в игре
-                if (player.Authorized && player.Pawn.Value != null && player.Pawn.Value.IsValid)
+                if (player == null || 
+                    !player.IsValid || 
+                    player.IsBot || 
+                    player.Connected != ConnectionState.Connected) 
                 {
-                    player.ExecuteClientCommand($"play {soundEvent}");
+                    continue;
                 }
+
+                player.ExecuteClientCommand($"play {soundEvent}");
             }
 
             // Сообщение в чат

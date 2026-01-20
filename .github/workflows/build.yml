@@ -27,23 +27,27 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Create plugin directory structure
+        shell: pwsh
         run: |
-          mkdir -p plugin/addons/counterstrikesharp/plugins/OwnagePlugin
-          cp bin/Release/net8.0/OwnagePlugin.dll plugin/addons/counterstrikesharp/plugins/OwnagePlugin/
+          New-Item -Path "plugin/addons/counterstrikesharp/plugins/OwnagePlugin" -ItemType Directory -Force
+          Copy-Item "bin/Release/net8.0/OwnagePlugin.dll" -Destination "plugin/addons/counterstrikesharp/plugins/OwnagePlugin/"
 
       - name: Create plugin.json
+        shell: pwsh
         run: |
-          echo '{
-            "Name": "OwnagePlugin",
-            "Description": "Plays OWNAGE sound when landing on enemy head",
-            "Author": "YourName",
-            "Version": "1.0.0",
-            "Url": "https://github.com/yourusername/ownageCSS"
-          }' > plugin/addons/counterstrikesharp/plugins/OwnagePlugin/plugin.json
+          $pluginJson = @{
+            Name = "OwnagePlugin"
+            Description = "Plays QuakeSoundsD.Ownage when landing on enemy head"
+            Author = "YourName"
+            Version = "1.0.0"
+            Url = "https://github.com/yourusername/ownageCSS"
+          } | ConvertTo-Json
+          $pluginJson | Out-File -FilePath "plugin/addons/counterstrikesharp/plugins/OwnagePlugin/plugin.json" -Encoding UTF8
 
       - name: Create ZIP artifact
+        shell: pwsh
         run: |
-          Compress-Archive -Path plugin/* -DestinationPath OwnagePlugin.zip -Force
+          Compress-Archive -Path "plugin/*" -DestinationPath "OwnagePlugin.zip" -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
