@@ -7,13 +7,15 @@ using System.Linq;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Commands;
 using System;
+using CounterStrikeSharp.API.Modules.Memory;
+using CounterStrikeSharp.API.Modules.Memory.DynamicFunctions;
 
 namespace OwnagePlugin
 {
     public class OwnagePlugin : BasePlugin
     {
         public override string ModuleName => "Ownage Headstomp";
-        public override string ModuleVersion => "1.1";
+        public override string ModuleVersion => "1.2";
         public override string ModuleAuthor => "You";
         public override string ModuleDescription => "Plays OWNAGE sound when landing on enemy head";
 
@@ -29,6 +31,7 @@ namespace OwnagePlugin
             AddCommand("css_ownage_test", "Test the ownage system", CommandOwnageTest);
             AddCommand("css_ownage_sound", "Play ownage sound", CommandOwnageSound);
             AddCommand("css_ownage_reload", "Reload ownage configuration", CommandOwnageReload);
+            AddCommand("css_ownage_debug", "Debug sound system", CommandOwnageDebug);
         }
 
         private void CheckForHeadLandings()
@@ -84,14 +87,21 @@ namespace OwnagePlugin
             Server.PrintToChatAll($" \x04[OWNAGE]\x01 {jumper.PlayerName} \x05заовнил\x01 {victim.PlayerName}!");
         }
 
-        // Универсальный метод для проигрывания звука
+        // Универсальный метод для проигрывания звука - ПРАВИЛЬНЫЙ СПОСОБ
         private void PlaySoundToPlayer(CCSPlayerController player, string soundEvent)
         {
             if (player == null || !player.IsValid || player.IsBot || !player.Pawn.IsValid || player.Pawn.Value == null)
                 return;
 
-            // Правильный способ проигрывания soundevents в CS2
-            player.ExecuteClientCommand($"playevents {soundEvent}");
+            try
+            {
+                // Правильный способ воспроизведения soundevents в CS2
+                Utilities.EmitSound(player, soundEvent);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OwnagePlugin] Error playing sound to {player.PlayerName}: {ex.Message}");
+            }
         }
 
         private void PlaySoundToAll(string soundEvent)
@@ -275,6 +285,32 @@ namespace OwnagePlugin
         {
             _lastOwnageTime.Clear();
             command.ReplyToCommand("✅ Ownage plugin reloaded successfully!");
+        }
+
+        // Команда для отладки звуковой системы
+        [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
+        public void CommandOwnageDebug(CCSPlayerController? caller, CommandInfo command)
+        {
+            try
+            {
+                command.ReplyToCommand("🔍 Ownage Plugin Debug Info:");
+                command.ReplyToCommand($"- Sound Event: '{OWNAGE_SOUND_EVENT}'");
+                command.ReplyToCommand($"- API Version: {ApiVersion}");
+                command.ReplyToCommand($"- Total Players: {Utilities.GetPlayers().Count(p => p != null && p.IsValid)}");
+                
+                if (caller != null && caller.IsValid)
+                {
+                    command.ReplyToCommand($"- Your Position: {caller.Pawn.Value?.AbsOrigin?.ToString() ?? "N/A"}");
+                    command.ReplyToCommand($"- Test Sound: Playing to you only...");
+                    PlaySoundToPlayer(caller, OWNAGE_SOUND_EVENT);
+                }
+                
+                command.ReplyToCommand("✅ Debug complete!");
+            }
+            catch (Exception ex)
+            {
+                command.ReplyToCommand($"❌ Debug Error: {ex.Message}");
+            }
         }
     }
 }
