@@ -103,16 +103,10 @@ namespace OwnagePlugin
             if (caller == null)
             {
                 var players = Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot).ToList();
-                if (players.Count < 2)
-                {
-                    command.ReplyToCommand("Not enough players to test ownage!");
-                    return;
-                }
 
                 var jumper = players[0];
-                var victim = players[1];
-                TriggerOwnage(jumper, victim);
-                command.ReplyToCommand($"Test ownage triggered between {jumper.PlayerName} and {victim.PlayerName}");
+                TriggerOwnage(jumper, jumper);
+                command.ReplyToCommand($"Test ownage triggered between {jumper.PlayerName} and {jumper.PlayerName}");
                 return;
             }
 
@@ -128,29 +122,13 @@ namespace OwnagePlugin
                     return;
                 }
 
-                if (caller.SteamID == target.SteamID)
-                {
-                    command.ReplyToCommand("You can't ownage yourself!");
-                    return;
-                }
-
-                TriggerOwnage(caller, target);
-                command.ReplyToCommand($"Test ownage triggered on {target.PlayerName}");
+                TriggerOwnage(caller, caller);
+                command.ReplyToCommand($"Test ownage triggered on {caller.PlayerName}");
             }
             else
             {
-                var otherPlayers = Utilities.GetPlayers().Where(p => 
-                    p.IsValid && !p.IsBot && p.SteamID != caller.SteamID).ToList();
-                
-                if (otherPlayers.Count == 0)
-                {
-                    command.ReplyToCommand("No other players to test on!");
-                    return;
-                }
-
-                var randomVictim = otherPlayers[new Random().Next(otherPlayers.Count)];
-                TriggerOwnage(caller, randomVictim);
-                command.ReplyToCommand($"Test ownage triggered on {randomVictim.PlayerName}");
+                TriggerOwnage(caller, caller);
+                command.ReplyToCommand($"Test ownage triggered on {caller.PlayerName}");
             }
         }
 
