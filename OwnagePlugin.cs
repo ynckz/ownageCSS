@@ -13,24 +13,22 @@ namespace OwnagePlugin
     public class OwnagePlugin : BasePlugin
     {
         public override string ModuleName => "Ownage Headstomp";
-        public override string ModuleVersion => "2.1";
+        public override string ModuleVersion => "3.0";
         public override string ModuleAuthor => "You";
         public override string ModuleDescription => "Plays OWNAGE sound when landing on enemy head";
+        
+        // ИСПОЛЬЗУЕМ СОБЫТИЕ ИЗ НАШЕГО ФАЙЛА
+        private const string OWNAGE_SOUND_EVENT = "Ownage.Sound";
 
         private Dictionary<ulong, float> _lastOwnageTime = new();
         private const float COOLDOWN = 2.5f;
-        
-        // ПРАВИЛЬНЫЙ ПУТЬ ДЛЯ CS2:
-        private const string OWNAGE_SOUND_PATH = "ownage/ownage.wav"; // Именно так!
 
         public override void Load(bool hotReload)
         {
             AddTimer(0.1f, CheckForHeadLandings, TimerFlags.REPEAT);
-            
-            // Регистрация команд
-            AddCommand("css_ownage_test", "Test the ownage system", CommandOwnageTest);
+            AddCommand("css_ownage_test", "Test ownage system", CommandOwnageTest);
             AddCommand("css_ownage_sound", "Play ownage sound", CommandOwnageSound);
-            AddCommand("css_ownage_debug", "Debug sound path", CommandOwnageDebug);
+            AddCommand("css_ownage_debug", "Debug sound system", CommandOwnageDebug);
         }
 
         private void CheckForHeadLandings()
@@ -38,16 +36,16 @@ namespace OwnagePlugin
             var players = Utilities.GetPlayers().Where(p => 
                 p != null && p.IsValid && !p.IsBot && 
                 p.Pawn.IsValid && p.Pawn.Value != null && 
-                p.Pawn.Value?.AbsOrigin != null).ToList();
+                p.Pawn.Value.AbsOrigin != null).ToList();
 
             foreach (var jumper in players)
             {
-                var jumperPos = jumper.Pawn.Value?.AbsOrigin;
+                var jumperPos = jumper.Pawn.Value.AbsOrigin;
                 if (jumperPos == null) continue;
 
                 foreach (var victim in players.Where(v => v != null && v.SteamID != jumper.SteamID))
                 {
-                    var victimPos = victim.Pawn.Value?.AbsOrigin;
+                    var victimPos = victim.Pawn.Value.AbsOrigin;
                     if (victimPos == null) continue;
 
                     float dist2d = MathF.Sqrt(
@@ -73,45 +71,40 @@ namespace OwnagePlugin
 
         private void TriggerOwnage(CCSPlayerController jumper, CCSPlayerController victim)
         {
-            PlaySoundToAll(OWNAGE_SOUND_PATH);
+            PlaySoundToAll(OWNAGE_SOUND_EVENT);
             Server.PrintToChatAll($" \x04[OWNAGE]\x01 {jumper.PlayerName} \x05заовнил\x01 {victim.PlayerName}!");
         }
 
-        private void PlaySoundToPlayer(CCSPlayerController player, string soundPath)
+        // ПРАВИЛЬНЫЙ СПОСОБ ДЛЯ SOUND EVENTS
+        private void PlaySoundToPlayer(CCSPlayerController player, string soundEvent)
         {
-            if (player == null || !player.IsValid || player.IsBot || !player.Pawn.IsValid || player.Pawn.Value == null)
+            if (player == null || !player.IsValid || player.IsBot || !player.Pawn.IsValid)
                 return;
 
-            // ПРОСТОЙ И РАБОЧИЙ СПОСОБ:
-            player.ExecuteClientCommand($"play {soundPath}");
+            Utilities.EmitSound(player, soundEvent);
         }
 
-        private void PlaySoundToAll(string soundPath)
+        private void PlaySoundToAll(string soundEvent)
         {
             foreach (var player in Utilities.GetPlayers())
             {
                 if (player == null) continue;
-                PlaySoundToPlayer(player, soundPath);
+                PlaySoundToPlayer(player, soundEvent);
             }
         }
 
         private CCSPlayerController? FindPlayerByName(string playerName)
         {
             playerName = playerName.ToLower().Trim();
-            
-            foreach (var player in Utilities.GetPlayers())
-            {
-                if (player == null || !player.IsValid || player.IsBot) continue;
-                if (player.PlayerName.ToLower().Trim().Contains(playerName))
-                    return player;
-            }
-            return null;
+            return Utilities.GetPlayers()
+                .FirstOrDefault(p => p != null && p.IsValid && !p.IsBot && 
+                    p.PlayerName.ToLower().Contains(playerName));
         }
 
         [CommandHelper(minArgs: 0, usage: "[target]", whoCanExecute: CommandUsage.CLIENT_AND_SERVER)]
         public void CommandOwnageTest(CCSPlayerController? caller, CommandInfo command)
         {
-            if (caller == null) // серверная консоль
+            if (caller == null) // консоль сервера
             {
                 var players = Utilities.GetPlayers().Where(p => p != null && p.IsValid && !p.IsBot).ToList();
                 if (players.Count < 2)
@@ -137,9 +130,8 @@ namespace OwnagePlugin
             }
             else
             {
-                var randomVictim = Utilities.GetPlayers().Where(p => 
-                    p != null && p.IsValid && !p.IsBot && p.SteamID != caller.SteamID)
-                    .FirstOrDefault();
+                var randomVictim = Utilities.GetPlayers()
+                    .FirstOrDefault(p => p != null && p.IsValid && !p.IsBot && p.SteamID != caller.SteamID);
                 
                 if (randomVictim == null)
                 {
@@ -157,7 +149,7 @@ namespace OwnagePlugin
         {
             if (command.ArgCount >= 2 && command.GetArg(1).Equals("all", StringComparison.OrdinalIgnoreCase))
             {
-                PlaySoundToAll(OWNAGE_SOUND_PATH);
+                PlaySoundToAll(OWNAGE_SOUND_EVENT);
                 command.ReplyToCommand("✅ Звук OWNAGE для всех!");
             }
             else if (command.ArgCount >= 2)
@@ -168,12 +160,12 @@ namespace OwnagePlugin
                     command.ReplyToCommand($"❌ Игрок не найден!");
                     return;
                 }
-                PlaySoundToPlayer(target, OWNAGE_SOUND_PATH);
+                PlaySoundToPlayer(target, OWNAGE_SOUND_EVENT);
                 command.ReplyToCommand($"✅ Звук OWNAGE для {target.PlayerName}!");
             }
             else
             {
-                PlaySoundToPlayer(caller!, OWNAGE_SOUND_PATH);
+                PlaySoundToPlayer(caller!, OWNAGE_SOUND_EVENT);
                 command.ReplyToCommand("✅ Звук OWNAGE для тебя!");
             }
         }
@@ -182,15 +174,12 @@ namespace OwnagePlugin
         public void CommandOwnageDebug(CCSPlayerController? caller, CommandInfo command)
         {
             command.ReplyToCommand($"🔍 OWNAGE DEBUG:");
-            command.ReplyToCommand($"- Путь к звуку: '{OWNAGE_SOUND_PATH}'");
-            command.ReplyToCommand($"- Файл должен лежать в: /csgo/sound/{OWNAGE_SOUND_PATH}");
-            
-            if (caller != null)
-            {
-                command.ReplyToCommand($"- Твоя позиция: {caller.Pawn.Value?.AbsOrigin?.ToString() ?? "N/A"}");
-            }
-            
-            command.ReplyToCommand($"✅ Чтобы проверить звук: css_ownage_sound");
+            command.ReplyToCommand($"- Sound Event: '{OWNAGE_SOUND_EVENT}'");
+            command.ReplyToCommand($"- Required Files:");
+            command.ReplyToCommand($"  • soundevents/ownage/soundevents_ownage.vsndevts");
+            command.ReplyToCommand($"  • sound/soundevents/ownage/ownage.vsnd_c");
+            command.ReplyToCommand($"- Install Path: /csgo/");
+            command.ReplyToCommand($"✅ To test: css_ownage_sound all");
         }
     }
 }

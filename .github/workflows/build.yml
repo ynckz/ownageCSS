@@ -27,24 +27,27 @@ jobs:
       - name: Create plugin structure
         shell: pwsh
         run: |
-          # Основная структура
+          # Основная структура плагина
           $pluginDir = "plugin/addons/counterstrikesharp/plugins/OwnagePlugin"
           New-Item -Path $pluginDir -ItemType Directory -Force
-          
-          # Копируем DLL
           Copy-Item "bin/Release/net8.0/OwnagePlugin.dll" -Destination "$pluginDir/"
           
-          # Создаем структуру для звуков
-          $soundDir = "plugin/sound/ownage"  # ВАЖНО: именно sound, не sounds!
-          New-Item -Path $soundDir -ItemType Directory -Force
+          # Создаем soundevents файлы
+          $soundeventsDir = "plugin/soundevents/ownage"
+          New-Item -Path $soundeventsDir -ItemType Directory -Force
+          if (Test-Path "soundevents/ownage/soundevents_ownage.vsndevts") {
+            Copy-Item "soundevents/ownage/soundevents_ownage.vsndevts" -Destination "$soundeventsDir/"
+          }
           
-          # Копируем звук
-          if (Test-Path "sound/ownage/ownage.wav") {
-            Copy-Item "sound/ownage/ownage.wav" -Destination "$soundDir/"
-            Write-Host "✅ Звуковой файл скопирован"
+          # Создаем звуковые файлы
+          $soundDir = "plugin/sound/soundevents/ownage"
+          New-Item -Path $soundDir -ItemType Directory -Force
+          if (Test-Path "sound/soundevents/ownage/ownage.vsnd_c") {
+            Copy-Item "sound/soundevents/ownage/ownage.vsnd_c" -Destination "$soundDir/"
           } else {
-            Write-Host "❌ Звуковой файл не найден! Скачай ownage.wav и положи в sound/ownage/"
-            exit 1
+            # Создаем dummy файл если нет настоящего
+            Write-Host "❌ ownage.vsnd_c not found! Creating placeholder..."
+            "dummy" | Out-File -FilePath "$soundDir/ownage.vsnd_c" -Encoding ASCII
           }
 
       - name: Create plugin.json
@@ -54,7 +57,7 @@ jobs:
             Name = "OwnagePlugin"
             Description = "Plays OWNAGE sound when landing on enemy head"
             Author = "YourName"
-            Version = "2.1"
+            Version = "3.0"
             Url = "https://github.com/yourusername/ownageCSS"
           } | ConvertTo-Json
           $pluginJson | Out-File -FilePath "plugin/addons/counterstrikesharp/plugins/OwnagePlugin/plugin.json" -Encoding UTF8

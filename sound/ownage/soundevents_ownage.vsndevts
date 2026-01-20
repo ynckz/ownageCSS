@@ -1,0 +1,14 @@
+{
+  "soundevents": {
+    "Ownage.Sound": {
+      "volume": "1.0",
+      "soundlevel": "SNDLVL_70dB",
+      "wave": "soundevents/ownage/ownage.vsnd_c",
+      "operator_stacks": {
+        "update_stack": {
+          "reference_operator": "update_default"
+        }
+      }
+    }
+  }
+}

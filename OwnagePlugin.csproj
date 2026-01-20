@@ -9,16 +9,18 @@
     <AssemblyName>OwnagePlugin</AssemblyName>
     <RootNamespace>OwnagePlugin</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CounterStrikeSharp.API" Version="1.0.356" />
   </ItemGroup>
 
-  <!-- Копируем звук в правильную папку при сборке -->
+  <!-- Копируем звуковые файлы -->
   <ItemGroup>
-    <None Include="sound\ownage\ownage.wav">
+    <None Include="soundevents\ownage\soundevents_ownage.vsndevts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="sound\soundevents\ownage\ownage.vsnd_c">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

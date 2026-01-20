@@ -1,0 +1,5 @@
+"soundevent"
+{
+  "name" "Ownage.Sound"
+  "wave" "soundevents/ownage/ownage.wav"
+}
