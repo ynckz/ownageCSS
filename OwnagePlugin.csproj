@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <!-- Последняя стабильная версия -->
-    <PackageReference Include="CounterStrikeSharp.API" Version="1.0.410" />
+    <PackageReference Include="CounterStrikeSharp.API" Version="1.0.356" />
   </ItemGroup>
 
   <ItemGroup>
