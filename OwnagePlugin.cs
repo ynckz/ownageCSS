@@ -7,17 +7,18 @@ using System.Linq;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Commands;
 using System;
+using CounterStrikeSharp.API.Modules.Memory;
 
 namespace OwnagePlugin
 {
     public class OwnagePlugin : BasePlugin
     {
         public override string ModuleName => "Ownage Headstomp";
-        public override string ModuleVersion => "3.0";
+        public override string ModuleVersion => "3.1";
         public override string ModuleAuthor => "You";
         public override string ModuleDescription => "Plays OWNAGE sound when landing on enemy head";
         
-        // ИСПОЛЬЗУЕМ СОБЫТИЕ ИЗ НАШЕГО ФАЙЛА
+        // ИСПОЛЬЗУЕМ ПРАВИЛЬНОЕ ИМЯ СОБЫТИЯ
         private const string OWNAGE_SOUND_EVENT = "Ownage.Sound";
 
         private Dictionary<ulong, float> _lastOwnageTime = new();
@@ -34,8 +35,11 @@ namespace OwnagePlugin
         private void CheckForHeadLandings()
         {
             var players = Utilities.GetPlayers().Where(p => 
-                p != null && p.IsValid && !p.IsBot && 
-                p.Pawn.IsValid && p.Pawn.Value != null && 
+                p != null && 
+                p.IsValid && 
+                !p.IsBot && 
+                p.Pawn.IsValid && 
+                p.Pawn.Value != null && 
                 p.Pawn.Value.AbsOrigin != null).ToList();
 
             foreach (var jumper in players)
@@ -49,12 +53,12 @@ namespace OwnagePlugin
                     if (victimPos == null) continue;
 
                     float dist2d = MathF.Sqrt(
-                        MathF.Pow(jumperPos.X - victimPos.X, 2) +
-                        MathF.Pow(jumperPos.Y - victimPos.Y, 2)
+                        MathF.Pow(jumperPos!.X - victimPos!.X, 2) +
+                        MathF.Pow(jumperPos!.Y - victimPos!.Y, 2)
                     );
 
-                    float victimHeadZ = victimPos.Z + 64.0f;
-                    float heightDiff = jumperPos.Z - victimHeadZ;
+                    float victimHeadZ = victimPos!.Z + 64.0f;
+                    float heightDiff = jumperPos!.Z - victimHeadZ;
 
                     if (dist2d < 32.0f && heightDiff > 5.0f && heightDiff < 120.0f)
                     {
@@ -75,13 +79,21 @@ namespace OwnagePlugin
             Server.PrintToChatAll($" \x04[OWNAGE]\x01 {jumper.PlayerName} \x05заовнил\x01 {victim.PlayerName}!");
         }
 
-        // ПРАВИЛЬНЫЙ СПОСОБ ДЛЯ SOUND EVENTS
+        // СОВРЕМЕННЫЙ СПОСОБ ВОСПРОИЗВЕДЕНИЯ ЗВУКОВ
         private void PlaySoundToPlayer(CCSPlayerController player, string soundEvent)
         {
             if (player == null || !player.IsValid || player.IsBot || !player.Pawn.IsValid)
                 return;
 
-            Utilities.EmitSound(player, soundEvent);
+            try
+            {
+                // Правильный способ для современной версии CS#
+                VirtualFunctions.EmitSound(player.Handle, soundEvent);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OwnagePlugin] Sound error: {ex.Message}");
+            }
         }
 
         private void PlaySoundToAll(string soundEvent)
@@ -178,7 +190,6 @@ namespace OwnagePlugin
             command.ReplyToCommand($"- Required Files:");
             command.ReplyToCommand($"  • soundevents/ownage/soundevents_ownage.vsndevts");
             command.ReplyToCommand($"  • sound/soundevents/ownage/ownage.vsnd_c");
-            command.ReplyToCommand($"- Install Path: /csgo/");
             command.ReplyToCommand($"✅ To test: css_ownage_sound all");
         }
     }

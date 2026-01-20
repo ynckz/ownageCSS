@@ -37,6 +37,23 @@ jobs:
           New-Item -Path $soundeventsDir -ItemType Directory -Force
           if (Test-Path "soundevents/ownage/soundevents_ownage.vsndevts") {
             Copy-Item "soundevents/ownage/soundevents_ownage.vsndevts" -Destination "$soundeventsDir/"
+          } else {
+            # Создаем файл если его нет
+            $content = '{
+              "soundevents": {
+                "Ownage.Sound": {
+                  "volume": "1.0",
+                  "soundlevel": "SNDLVL_70dB",
+                  "wave": "soundevents/ownage/ownage.vsnd_c",
+                  "operator_stacks": {
+                    "update_stack": {
+                      "reference_operator": "update_default"
+                    }
+                  }
+                }
+              }
+            }'
+            $content | Out-File -FilePath "$soundeventsDir/soundevents_ownage.vsndevts" -Encoding UTF8
           }
           
           # Создаем звуковые файлы
@@ -45,8 +62,7 @@ jobs:
           if (Test-Path "sound/soundevents/ownage/ownage.vsnd_c") {
             Copy-Item "sound/soundevents/ownage/ownage.vsnd_c" -Destination "$soundDir/"
           } else {
-            # Создаем dummy файл если нет настоящего
-            Write-Host "❌ ownage.vsnd_c not found! Creating placeholder..."
+            # Создаем dummy файл
             "dummy" | Out-File -FilePath "$soundDir/ownage.vsnd_c" -Encoding ASCII
           }
 
@@ -57,7 +73,7 @@ jobs:
             Name = "OwnagePlugin"
             Description = "Plays OWNAGE sound when landing on enemy head"
             Author = "YourName"
-            Version = "3.0"
+            Version = "3.1"
             Url = "https://github.com/yourusername/ownageCSS"
           } | ConvertTo-Json
           $pluginJson | Out-File -FilePath "plugin/addons/counterstrikesharp/plugins/OwnagePlugin/plugin.json" -Encoding UTF8
