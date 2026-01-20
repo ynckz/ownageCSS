@@ -293,7 +293,6 @@ namespace OwnagePlugin
             {
                 command.ReplyToCommand("🔍 Ownage Plugin Debug Info:");
                 command.ReplyToCommand($"- Sound File: '{OWNAGE_SOUND_PATH}'");
-                command.ReplyToCommand($"- API Version: {ApiVersion}");
                 command.ReplyToCommand($"- Total Players: {Utilities.GetPlayers().Count(p => p != null && p.IsValid)}");
                 
                 if (caller != null && caller.IsValid)
