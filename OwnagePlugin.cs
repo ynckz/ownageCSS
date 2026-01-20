@@ -7,21 +7,19 @@ using System.Linq;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Commands;
 using System;
-using CounterStrikeSharp.API.Modules.Memory;
-using CounterStrikeSharp.API.Modules.Memory.DynamicFunctions;
 
 namespace OwnagePlugin
 {
     public class OwnagePlugin : BasePlugin
     {
         public override string ModuleName => "Ownage Headstomp";
-        public override string ModuleVersion => "1.2";
+        public override string ModuleVersion => "2.0";
         public override string ModuleAuthor => "You";
         public override string ModuleDescription => "Plays OWNAGE sound when landing on enemy head";
 
         private Dictionary<ulong, float> _lastOwnageTime = new();
         private const float COOLDOWN = 2.5f; // секунды
-        private const string OWNAGE_SOUND_EVENT = "QuakeSoundsD.Ownage"; // Правильный soundevent name
+        private const string OWNAGE_SOUND_PATH = "ownage/ownage.mp3"; // Путь к нашему файлу
 
         public override void Load(bool hotReload)
         {
@@ -81,22 +79,22 @@ namespace OwnagePlugin
         private void TriggerOwnage(CCSPlayerController jumper, CCSPlayerController victim)
         {
             // Проигрываем звук всем валидным игрокам
-            PlaySoundToAll(OWNAGE_SOUND_EVENT);
+            PlaySoundToAll(OWNAGE_SOUND_PATH);
 
             // Сообщение в чат
             Server.PrintToChatAll($" \x04[OWNAGE]\x01 {jumper.PlayerName} \x05заовнил\x01 {victim.PlayerName}!");
         }
 
-        // Универсальный метод для проигрывания звука - ПРАВИЛЬНЫЙ СПОСОБ
-        private void PlaySoundToPlayer(CCSPlayerController player, string soundEvent)
+        // Универсальный метод для проигрывания звука
+        private void PlaySoundToPlayer(CCSPlayerController player, string soundPath)
         {
             if (player == null || !player.IsValid || player.IsBot || !player.Pawn.IsValid || player.Pawn.Value == null)
                 return;
 
             try
             {
-                // Правильный способ воспроизведения soundevents в CS2
-                Utilities.EmitSound(player, soundEvent);
+                // Правильный способ для MP3/WAV файлов
+                player.ExecuteClientCommand($"play {soundPath}");
             }
             catch (Exception ex)
             {
@@ -104,12 +102,12 @@ namespace OwnagePlugin
             }
         }
 
-        private void PlaySoundToAll(string soundEvent)
+        private void PlaySoundToAll(string soundPath)
         {
             foreach (var player in Utilities.GetPlayers())
             {
                 if (player == null) continue;
-                PlaySoundToPlayer(player, soundEvent);
+                PlaySoundToPlayer(player, soundPath);
             }
         }
 
@@ -211,7 +209,7 @@ namespace OwnagePlugin
         {
             try
             {
-                string soundEvent = OWNAGE_SOUND_EVENT;
+                string soundPath = OWNAGE_SOUND_PATH;
                 
                 // Если команда вызвана с серверной консоли
                 if (caller == null)
@@ -222,7 +220,7 @@ namespace OwnagePlugin
                         
                         if (targetArg.Equals("all", StringComparison.OrdinalIgnoreCase))
                         {
-                            PlaySoundToAll(soundEvent);
+                            PlaySoundToAll(soundPath);
                             command.ReplyToCommand("✅ Ownage sound played for all players");
                             return;
                         }
@@ -234,7 +232,7 @@ namespace OwnagePlugin
                             return;
                         }
                         
-                        PlaySoundToPlayer(target, soundEvent);
+                        PlaySoundToPlayer(target, soundPath);
                         command.ReplyToCommand($"✅ Ownage sound played for {target.PlayerName}");
                         return;
                     }
@@ -250,7 +248,7 @@ namespace OwnagePlugin
                     
                     if (targetArg.Equals("all", StringComparison.OrdinalIgnoreCase))
                     {
-                        PlaySoundToAll(soundEvent);
+                        PlaySoundToAll(soundPath);
                         command.ReplyToCommand("✅ Ownage sound played for all players");
                     }
                     else
@@ -262,14 +260,14 @@ namespace OwnagePlugin
                             return;
                         }
                         
-                        PlaySoundToPlayer(target, soundEvent);
+                        PlaySoundToPlayer(target, soundPath);
                         command.ReplyToCommand($"✅ Ownage sound played for {target.PlayerName}");
                     }
                 }
                 else
                 {
                     // Проиграть звук только для вызвавшего игрока
-                    PlaySoundToPlayer(caller, soundEvent);
+                    PlaySoundToPlayer(caller, soundPath);
                     command.ReplyToCommand("✅ Ownage sound played for you");
                 }
             }
@@ -294,7 +292,7 @@ namespace OwnagePlugin
             try
             {
                 command.ReplyToCommand("🔍 Ownage Plugin Debug Info:");
-                command.ReplyToCommand($"- Sound Event: '{OWNAGE_SOUND_EVENT}'");
+                command.ReplyToCommand($"- Sound File: '{OWNAGE_SOUND_PATH}'");
                 command.ReplyToCommand($"- API Version: {ApiVersion}");
                 command.ReplyToCommand($"- Total Players: {Utilities.GetPlayers().Count(p => p != null && p.IsValid)}");
                 
@@ -302,7 +300,7 @@ namespace OwnagePlugin
                 {
                     command.ReplyToCommand($"- Your Position: {caller.Pawn.Value?.AbsOrigin?.ToString() ?? "N/A"}");
                     command.ReplyToCommand($"- Test Sound: Playing to you only...");
-                    PlaySoundToPlayer(caller, OWNAGE_SOUND_EVENT);
+                    PlaySoundToPlayer(caller, OWNAGE_SOUND_PATH);
                 }
                 
                 command.ReplyToCommand("✅ Debug complete!");

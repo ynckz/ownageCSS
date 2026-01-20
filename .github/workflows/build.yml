@@ -29,8 +29,26 @@ jobs:
       - name: Create plugin directory structure
         shell: pwsh
         run: |
-          New-Item -Path "plugin/addons/counterstrikesharp/plugins/OwnagePlugin" -ItemType Directory -Force
-          Copy-Item "bin/Release/net8.0/OwnagePlugin.dll" -Destination "plugin/addons/counterstrikesharp/plugins/OwnagePlugin/"
+          # Создаем структуру папок
+          $pluginDir = "plugin/addons/counterstrikesharp/plugins/OwnagePlugin"
+          New-Item -Path $pluginDir -ItemType Directory -Force
+          
+          # Копируем DLL
+          Copy-Item "bin/Release/net8.0/OwnagePlugin.dll" -Destination "$pluginDir/"
+          
+          # Создаем папку для звуков
+          $soundDir = "$pluginDir/sound/ownage"
+          New-Item -Path $soundDir -ItemType Directory -Force
+          
+          # Копируем звуковой файл
+          if (Test-Path "sound/ownage/ownage.mp3") {
+            Copy-Item "sound/ownage/ownage.mp3" -Destination "$soundDir/"
+            Write-Host "✅ Sound file copied successfully"
+          } else {
+            Write-Host "❌ Sound file not found! Creating placeholder..."
+            # Создаем пустой файл как placeholder
+            New-Item -Path "$soundDir/ownage.mp3" -ItemType File
+          }
 
       - name: Create plugin.json
         shell: pwsh
@@ -39,7 +57,7 @@ jobs:
             Name = "OwnagePlugin"
             Description = "Plays OWNAGE sound when landing on enemy head"
             Author = "YourName"
-            Version = "1.0.0"
+            Version = "2.0"
             Url = "https://github.com/yourusername/ownageCSS"
           } | ConvertTo-Json
           $pluginJson | Out-File -FilePath "plugin/addons/counterstrikesharp/plugins/OwnagePlugin/plugin.json" -Encoding UTF8
